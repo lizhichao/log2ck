@@ -1,0 +1,25 @@
+{
+  "name": "lizhichao/log2ck",
+  "type": "library",
+  "description": "listening log file written to clickhouse",
+  "keywords": [
+    "php",
+    "log",
+    "clickhouse"
+  ],
+  "license": "Apache-2.0",
+  "authors": [
+    {
+      "name": "tanszhe",
+      "email": "1018595261@qq.com"
+    }
+  ],
+  "require": {
+    "lizhichao/one-ck": "^0.1.12"
+  },
+  "autoload": {
+    "classmap": [
+      "Log2Ck.php"
+    ]
+  }
+}
