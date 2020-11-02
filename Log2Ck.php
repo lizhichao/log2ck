@@ -121,7 +121,7 @@ class Log2Ck
         }
     }
 
-    protected function write($data, $i = 0)
+    protected function write($i = 0)
     {
         try {
             $this->ck->writeBlock($this->data);
@@ -131,7 +131,7 @@ class Log2Ck
             if ($i === 0) {
                 $this->getCk(1);
                 usleep(100000);
-                $this->write($data, ++$i);
+                $this->write(++$i);
             } else {
                 $this->data = array_slice($this->data, -$this->max_cache_data_len);
             }
@@ -142,14 +142,14 @@ class Log2Ck
     protected function save()
     {
         if (count($this->data) >= $this->min_block_len) {
-            $this->write($this->data);
+            $this->write();
             $this->data = [];
         }
 
         if (($this->last_time + $this->max_flow_during_time) < time()) {
             $this->last_time = time();
             if ($this->data) {
-                $this->write($this->data);
+                $this->write();
                 $this->data = [];
             }
             $this->end();
