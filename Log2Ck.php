@@ -88,7 +88,7 @@ class Log2Ck
         try {
             $this->ck = new \OneCk\Client(...$args);
         } catch (\Exception $e) {
-            echo 'error: ' . $e->getMessage();
+            echo 'error: ' . $e->getMessage() . PHP_EOL;
         }
         if ($i) {
             $this->start();
