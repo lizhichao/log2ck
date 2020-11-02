@@ -67,7 +67,7 @@ class Log2Ck
     {
         foreach ($this->listenBlock(STDIN) as $info) {
             if ($info) {
-                $fn = $this->log_fn;
+                $fn  = $this->log_fn;
                 $row = $fn($info);
                 if ($row !== false) {
                     $this->data[] = $row;
@@ -79,13 +79,17 @@ class Log2Ck
 
     protected function getCk($i = 0)
     {
-        $arr      = getopt('h:u:p:d:');
-        $args     = [];
-        $args[]   = (isset($arr['h']) && $arr['h']) ? $arr['h'] : 'tcp://127.0.0.1:9000';
-        $args[]   = (isset($arr['u']) && $arr['u']) ? $arr['u'] : 'default';
-        $args[]   = (isset($arr['p']) && $arr['p']) ? $arr['p'] : '';
-        $args[]   = (isset($arr['d']) && $arr['d']) ? $arr['d'] : 'default';
-        $this->ck = new \OneCk\Client(...$args);
+        $arr    = getopt('h:u:p:d:');
+        $args   = [];
+        $args[] = (isset($arr['h']) && $arr['h']) ? $arr['h'] : 'tcp://127.0.0.1:9000';
+        $args[] = (isset($arr['u']) && $arr['u']) ? $arr['u'] : 'default';
+        $args[] = (isset($arr['p']) && $arr['p']) ? $arr['p'] : '';
+        $args[] = (isset($arr['d']) && $arr['d']) ? $arr['d'] : 'default';
+        try {
+            $this->ck = new \OneCk\Client(...$args);
+        } catch (\Exception $e) {
+            echo 'error: ' . $e->getMessage();
+        }
         if ($i) {
             $this->start();
         }
@@ -112,8 +116,8 @@ class Log2Ck
         } catch (\Exception $e) {
             echo 'start Exception:' . $e->getMessage() . PHP_EOL;
             if ($i === 0) {
-                $this->getCk();
                 usleep(100000);
+                $this->getCk();
                 $this->start(++$i);
             } else {
                 echo "write start fail \n";
@@ -129,8 +133,8 @@ class Log2Ck
         } catch (\Exception $e) {
             echo 'write Exception:' . $e->getMessage() . PHP_EOL;
             if ($i === 0) {
-                $this->getCk(1);
                 usleep(100000);
+                $this->getCk(1);
                 $this->write(++$i);
             } else {
                 $this->data = array_slice($this->data, -$this->max_cache_data_len);
