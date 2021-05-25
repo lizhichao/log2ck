@@ -10,13 +10,29 @@ Very low occupancy of resources, It can process more than 100 thousand log infor
 
 ## example
 
-`tail -F apapche/access.log | php apache_log.php -h tcp://127.0.0.1:9000 -u default -p 123456 -d logs -t apache_log`
+`tail -F apapche/access.log | php test.php`
 
-options : 
+```php
+$db_conf             = [];
+$db_conf['host']     = 'tcp://192.168.23.129:9091';
+$db_conf['username'] = 'default';
+$db_conf['password'] = '123456';
+$db_conf['database'] = 'test1';
 
-- `-h` clickhouse host port
-- `-u` clickhouse user name
-- `-p` clickhouse password
-- `-d` clickhouse database name
-- `-t` clickhouse table name
+$table       = 'web_log';
+$server_name = 'web1';
+
+$ck = new Log2Ck(
+    $db_conf, // 
+    $table, // table 
+    [
+    'host', 'ip', 'duration', 
+    'create_time', 'method', 'url', 'path', 'code', 'size', 
+    'refer', 'refer_host', 'user_agent', 
+    'server_name'
+    ] //field name
+);
+
+```
+
 

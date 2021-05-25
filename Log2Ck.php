@@ -11,8 +11,10 @@ class Log2Ck
     public $min_block_len        = 100;
     public $max_cache_data_len   = 100000;
 
-    protected $last_time = 0;
-    protected $data      = [];
+    protected $last_time      = 0;
+    protected $data           = [];
+    protected $last_fail_time = 0;
+
     /**
      * @var null|OneCk\Client
      */
@@ -23,11 +25,13 @@ class Log2Ck
     protected $log_fn       = null;
     protected $table_name   = '';
     protected $table_fields = [];
+    protected $db_conf      = [];
 
-    public function __construct($table, array $fields)
+    public function __construct($db_conf, $table, array $fields)
     {
         $this->table_name   = $table;
         $this->table_fields = $fields;
+        $this->db_conf      = $db_conf;
         $this->getCk(1);
     }
 
@@ -73,26 +77,29 @@ class Log2Ck
                     $this->data[] = $row;
                 }
             }
-            $this->save();
+            if ($this->last_fail_time < time() - 3) {
+                $this->save();
+            }
         }
     }
 
     protected function getCk($i = 0)
     {
-        $arr    = getopt('h:u:p:d:');
-        $args   = [];
-        $args[] = (isset($arr['h']) && $arr['h']) ? $arr['h'] : 'tcp://127.0.0.1:9000';
-        $args[] = (isset($arr['u']) && $arr['u']) ? $arr['u'] : 'default';
-        $args[] = (isset($arr['p']) && $arr['p']) ? $arr['p'] : '';
-        $args[] = (isset($arr['d']) && $arr['d']) ? $arr['d'] : 'default';
         try {
-            $this->ck = new \OneCk\Client(...$args);
+            $this->ck = new \OneCk\Client(
+                $this->db_conf['host'],
+                $this->db_conf['username'],
+                $this->db_conf['password'],
+                $this->db_conf['database']
+            );
         } catch (\Exception $e) {
             echo 'error: ' . $e->getMessage() . PHP_EOL;
+            return false;
         }
         if ($i) {
-            $this->start();
+            return $this->start();
         }
+        return true;
     }
 
     protected function end()
@@ -101,10 +108,12 @@ class Log2Ck
             $this->ck->writeEnd();
             echo 'write end' . PHP_EOL;
         } catch (\Exception $e) {
-            $this->getCk();
-            echo "write end fail \n";
+            if ($this->getCk() === false) {
+                echo "write end fail \n";
+                return false;
+            }
         }
-        $this->start(0);
+        return $this->start(0);
     }
 
 
@@ -113,32 +122,39 @@ class Log2Ck
         try {
             $this->ck->writeStart($this->table_name, $this->table_fields);
             echo 'write start' . PHP_EOL;
+            return true;
         } catch (\Exception $e) {
             echo 'start Exception:' . $e->getMessage() . PHP_EOL;
             if ($i === 0) {
-                usleep(100000);
-                $this->getCk();
-                $this->start(++$i);
-            } else {
-                echo "write start fail \n";
+                usleep(10000);
+                if ($this->getCk()) {
+                    return $this->start(++$i);
+                }
             }
+            echo "write start fail \n";
+            return false;
         }
     }
+
 
     protected function write($i = 0)
     {
         try {
             $this->ck->writeBlock($this->data);
             echo 'write count:' . count($this->data) . PHP_EOL;
+            return true;
         } catch (\Exception $e) {
+            $this->last_fail_time = time();
             echo 'write Exception:' . $e->getMessage() . PHP_EOL;
             if ($i === 0) {
-                usleep(100000);
-                $this->getCk(1);
-                $this->write(++$i);
-            } else {
-                $this->data = array_slice($this->data, -$this->max_cache_data_len);
+                usleep(10000);
+                if ($this->getCk(1)) {
+                    return $this->write(++$i);
+                }
             }
+            $this->data = array_slice($this->data, -$this->max_cache_data_len);
+            echo 'date len:' . count($this->data) . PHP_EOL;
+            return false;
         }
     }
 
@@ -146,18 +162,25 @@ class Log2Ck
     protected function save()
     {
         if (count($this->data) >= $this->min_block_len) {
-            $this->write();
-            $this->data = [];
+            if ($this->write()) {
+                $this->data = [];
+            } else {
+                return false;
+            }
         }
 
         if (($this->last_time + $this->max_flow_during_time) < time()) {
             $this->last_time = time();
             if ($this->data) {
-                $this->write();
-                $this->data = [];
+                if ($this->write()) {
+                    $this->data = [];
+                } else {
+                    return false;
+                }
             }
-            $this->end();
+            return $this->end();
         }
+        return true;
     }
 }
 
