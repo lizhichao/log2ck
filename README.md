@@ -32,6 +32,7 @@ $ck = new Log2Ck(
     'server_name'
     ] //field name
 );
+$ck->run();
 
 ```
 
