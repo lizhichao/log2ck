@@ -32,7 +32,10 @@ $ck = new Log2Ck(
     'server_name'
     ] //field name
 );
-$ck->run();
+$ck->regLogFn(function($row){
+    // 自己解析 $row
+    return $array; //和上面的字段对应
+})->run();
 
 ```
 
